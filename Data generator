@@ -1,0 +1,57 @@
+import random
+import json
+import paho.mqtt.publish as publish
+import paho.mqtt.client as mqtt_client
+import time
+
+#MQTT configuration
+broker = "mqtt.beia-telemetrie.ro"
+port = 1883
+topic = "/training/device/Mustata-Carmen/"
+username = "interviu.practica"
+password = "beiapractica"
+deviceId = "85D2C515-563E-4224-9009-0CADD856ED17"
+
+def connect_mqtt():
+    def on_connect(client, userdata, flags, rc):
+        if rc==0:
+            print("Succesfully connected to MQTT broker")
+        else:
+            print("Failed to connect, return code ", rc)
+
+    client = mqtt_client.Client(client_id)
+    client.username_pw_set(username, password)
+    client.on_connect = on_connect
+    client.connect(broker,port)
+    return client
+
+
+# Generating a random value for the temperature between -10 and 40 degrees
+def generate_temperature():
+    temperature = round(random.uniform(-10, 40), 2)
+    return temperature
+
+# Generating a random value for the humidity between 0 and 100 percent
+def generate_humidity():
+    humidity = round(random.uniform(0, 100), 2)
+    return humidity
+
+while True:
+    # Generating values for temperature and humidity
+    temperature = generate_temperature()
+    humidity = generate_humidity()
+
+    # Displaying the generated values
+    print("Temperature:", temperature, "°C")
+    print("Humidity:", humidity, "%")
+
+    payload_dict = {
+        "temperature": temperature,
+        "humidity": humidity
+    }
+
+    # Publishing the random values to the topic
+    publish.single(topic, hostname=broker, port=port, payload=json.dumps(payload_dict))
+
+    # Wait for a period of time
+    time.sleep(10)
