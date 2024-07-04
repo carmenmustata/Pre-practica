@@ -1,0 +1,70 @@
+import requests
+from bs4 import BeautifulSoup
+from telegram import Update, Bot
+from telegram.ext import Application, CommandHandler, CallbackContext
+
+#Making a GET requests to Google's homepage
+response = requests.get("http://www.google.com")
+#Printing the status code of the response to check if the request was successful
+print(response.status_code)
+
+API_TOKEN = "7062045350:AAH6dnrvtnLRYBSm5ifMLguozsOE4gn6KfY"
+
+#Define the /start command handler function
+async def start(update: Update, context: CallbackContext):
+    #Reply with a welcome message when the /start command is received
+    await update.message.reply_text("Hello! I am your bot. Send /help to see the list of available commands.")
+
+#Define the /help command handler function
+async def help_command(update: Update, context: CallbackContext):
+    #Create a help message listing all available commands
+    help_text = "Available commands:\n"
+    help_text += "/start - Start the bot\n"
+    help_text += "/help - Show this help message\n"
+    help_text += "/info - Get bot information\n"
+    help_text += "/temperature - Get the current temperature in Bucharest"
+    #Send the help message as a reply
+    await update.message.reply_text(help_text)
+
+#Define the /info command handler function
+async def info(update: Update, context: CallbackContext):
+    #Format the bot's information and send it as a reply
+    bot_info = "Bot Name: {}\nUsername: @{}\nID: {}".format(
+        context.bot.name, context.bot.username, context.bot.id)
+    await update.message.reply_text(bot_info)
+
+# Define the /temperature command handler function
+async def get_temperature(update: Update, context: CallbackContext) -> None:
+    # Specify the city for which to get the temperature
+    city = "Bucharest"
+    # Create the URL to fetch the temperature from wttr.in
+    url = f"http://wttr.in/{city.replace(' ', '+')}?format=%t"
+
+    #Make a GET requests to the URL
+    response = requests.get(url)
+    #Check if the request was successful
+    if response.status_code == 200:
+        # Get the temperature from the response and send it as a reply
+        temperature = response.text.strip()
+        await update.message.reply_text(f"The current temperature in {city} is {temperature}.")
+    else:
+        # Send an error message if the request failed
+        await update.message.reply_text("Sorry, unable to fetch the temperature at the moment.")
+
+#Main function to set up and run the bot
+def main():
+    # Create an application instance with the bot's token
+    application = Application.builder().token(API_TOKEN).build()
+
+    # Add command handlers to the application
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("info", info))
+    application.add_handler(CommandHandler("temperature", get_temperature))
+
+    #Start the bot by polling the updates
+    application.run_polling()
+
+#Run the main function if the script is executed directly
+if __name__ == '__main__':
+    main()
