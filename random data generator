@@ -1,0 +1,52 @@
+import paho.mqtt.client as mqtt
+import random
+import time
+import json
+
+# MQTT Configuration
+MQTT_ip = "mqtt.beia-telemetrie.ro"  # Server
+MQTT_port = 1883
+MQTT_topic = "/training/device/carmen-mustata/"  # Topic
+reconnect = True
+
+# Function to generate pressure data
+def generate_sensor_data():
+    pressure = round(random.uniform(980, 1020),2)  # Range: 980 to 1020 hPa
+    temperature = round(random.uniform(0, 40),2)
+    return {
+        "pressure": pressure,
+        "temperature": temperature
+    }
+
+def publish_data(client, topic, data):
+    payload = json.dumps(data)
+    client.publish(topic, payload)
+
+def on_disconnect(client, userdata, rc):
+    if reconnect:
+        print("Disconnected, attempting to reconnect...")
+        while True:
+            try:
+                client.reconnect()
+                print("Reconnected")
+                break
+            except:
+                print("Reconnect failed, retrying in 5 seconds...")
+                time.sleep(5)
+
+# Client configuration
+client = mqtt.Client()
+client.on_disconnect = on_disconnect  # Set the on_disconnect callback
+client.connect(MQTT_ip, MQTT_port)
+
+# Publishing the data
+try:
+    while True:
+        motor_data = generate_sensor_data()
+        print(f"Publishing data: {motor_data}")
+        publish_data(client, MQTT_topic, motor_data)
+        time.sleep(5)  # Sleep 5 sec
+except KeyboardInterrupt:
+    print("Finished")
+    reconnect = False
+    client.disconnect()
